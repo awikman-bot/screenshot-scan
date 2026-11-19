@@ -26,8 +26,8 @@ blank line, text). OCR languages: `ocr-languages`, default `eng` (the owner
 chose English only, 2026-11-19).
 
 - UUID: `screenshot-scan@awikman-bot.github.io`
-- Repo: https://github.com/awikman-bot/screenshot-scan (**private** until the
-  owner confirms it works on their desktop; **ask before making it public**)
+- Repo: https://github.com/awikman-bot/screenshot-scan (**public** since
+  2026-11-19, after the owner's desktop test)
 - License: GPL-2.0-or-later. See `CREDITS.md` for copied code.
 - Supported: GNOME Shell **50** (tested at runtime) and **51** (source-reviewed
   only, see "Version status"). ESM format, so GNOME 45+ only.
@@ -39,8 +39,8 @@ chose English only, 2026-11-19).
   each is needed, and batch requests so you ask rarely. Do not work around
   this (no extracting RPMs, no containers to dodge it).
 - Ask the owner only about: sudo commands, manual desktop tests, OCR
-  languages, making the repo public. Decide implementation details yourself
-  and document them (here or in `docs/research.md`).
+  languages. The repo is public: never commit internal or personal data.
+  Decide implementation details yourself and document them (here or in `docs/research.md`).
 - Run `make check` before every commit. Commit small, push often.
 - Never copy code without checking its license and crediting it (header
   comment + `CREDITS.md`). Nothing GPL-3.0-only, nothing unlicensed.
@@ -66,6 +66,7 @@ tests/
   e2e/harness/                  test-only extension that drives the real screenshot UI
   e2e/show-image.js             GTK window showing a fixture (for Window-mode test)
 docs/research.md                how other extensions hook the UI; why this design
+docs/screenshot.png             README image (crop of the e2e snapshot; refresh it after UI changes)
 install.sh / uninstall.sh       user install, no sudo
 Makefile                        make help
 eslint.config.js, package.json  lint tooling only (node_modules/ is gitignored)
@@ -97,6 +98,7 @@ runtime as `Main.screenshotUI`.
 | exported `Tooltip` class | Native-looking tooltip | `enable()` |
 | `Shell.Screenshot.composite_to_stream` as a **promise** | gnome-shell's screenshot.js calls `Gio._promisify` on it at import time; we import that module, so the promise form is available | `captureSelectionPng()` |
 | CSS class `screenshot-ui-shot-cast-button` | Native button look | `enable()` |
+| `_bottomRowContainer` (BinLayout), `_captureButton` | Optional: its layout manager is swapped for `CenterSafeBinLayout` so the 3-button pill does not run under the centred capture button; restored in `disable()`. Skipped with a warning if missing | `_installBottomRowLayout()` |
 
 `REQUIRED_MEMBERS` in that file lists the members checked at `enable()`. If
 one is missing, the extension does not patch anything. It logs and notifies
@@ -211,5 +213,5 @@ Debugging:
 
 | GNOME Shell | Status |
 |---|---|
-| 50.6 (Fedora 44) | `make check` passes (19 pipeline tests, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **pending** |
+| 50.6 (Fedora 44) | `make check` passes (19 pipeline tests, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **passed** 2026-11-19 (one fix: Scan button overlapped the capture button, now `CenterSafeBinLayout`) |
 | 51.1 (Fedora 45) | Source diff reviewed (hooked code unchanged). **Run `make check` after upgrading.** |

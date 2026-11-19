@@ -9,6 +9,8 @@ contents, or the text if there are no codes, are copied to your clipboard.
 No screenshot file is saved, and everything runs on your computer with no
 network access.
 
+![GNOME's screenshot tool with the Scan button selected, next to the camera and video buttons](docs/screenshot.png)
+
 You can change what gets copied (codes only, text only, or both) and the OCR
 languages in the extension's preferences.
 

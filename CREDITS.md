@@ -37,3 +37,7 @@ These extensions were read to learn how others hook the screenshot UI
 ## Artwork
 
 `extension/icons/screenshot-scan-symbolic.svg` is original to this project.
+
+`docs/screenshot.png` (README) is a crop of the e2e snapshot. Its background
+is Fedora 44's default wallpaper `f44-01-day` (package
+`f44-backgrounds-base`, CC-BY-SA-4.0, Fedora Design Team).

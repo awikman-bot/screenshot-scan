@@ -22,6 +22,8 @@
 // disable() removes the button and tooltip, disconnects every signal and
 // restores `_onCaptureButtonClicked`, leaving the UI exactly as it was.
 
+import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
@@ -115,6 +117,45 @@ export async function captureSelectionPng(ui) {
     return stream.steal_as_bytes();
 }
 
+/** Gap (logical px) kept between the shot/cast pill and the capture button. */
+const CAPTURE_BUTTON_GAP = 6;
+
+/**
+ * GNOME lays out the bottom row (shot/cast pill · capture button · pointer
+ * toggle) with a plain BinLayout: all three overlap, the capture button is
+ * centred and the panel width comes from the Selection/Screen/Window row. A
+ * third pill button makes the pill wider than half the panel, so it ran under
+ * the capture button. This layout asks for enough width that each side of the
+ * centred child fits, which widens the panel only as much as needed.
+ */
+const CenterSafeBinLayout = GObject.registerClass(
+class CenterSafeBinLayout extends Clutter.BinLayout {
+    _init(center) {
+        super._init();
+        this._center = center;
+    }
+
+    vfunc_get_preferred_width(container, forHeight) {
+        const [min, nat] = super.vfunc_get_preferred_width(container, forHeight);
+        let side = 0;
+        let center = 0;
+        for (const child of container) {
+            if (!child.visible)
+                continue;
+            const [, childNat] = child.get_preferred_width(forHeight);
+            if (child === this._center)
+                center = childNat;
+            else
+                side = Math.max(side, childNat);
+        }
+        const scale = container.get_stage()
+            ? St.ThemeContext.get_for_stage(container.get_stage()).scale_factor
+            : 1;
+        const needed = center + 2 * (side + CAPTURE_BUTTON_GAP * scale);
+        return [Math.max(min, needed), Math.max(nat, needed)];
+    }
+});
+
 export class ScanModePatch {
     /**
      * @param {object} ui Main.screenshotUI
@@ -133,6 +174,7 @@ export class ScanModePatch {
         this._tooltip = null;
         this._syncing = false;
         this._enabled = false;
+        this._origBottomLayout = null;
     }
 
     /** True while the Scan button is the selected capture mode. */
@@ -162,6 +204,7 @@ export class ScanModePatch {
             accessible_name: this._label,
         });
         ui._shotCastContainer.add_child(this._button);
+        this._installBottomRowLayout();
 
         // Same tooltip widget the native buttons use (exported, but its
         // signature is internal; skip the tooltip if it ever changes).
@@ -216,6 +259,31 @@ export class ScanModePatch {
         this._tooltip = null;
         this._button?.destroy();
         this._button = null;
+        this._restoreBottomRowLayout();
+    }
+
+    /**
+     * Cosmetic: stop the wider pill overlapping the capture button. Optional,
+     * so a GNOME version without these members still gets a working Scan.
+     */
+    _installBottomRowLayout() {
+        const row = this._ui._bottomRowContainer;
+        const center = this._ui._captureButton;
+        if (!(row?.layout_manager instanceof Clutter.BinLayout) || !center) {
+            console.warn('screenshot-scan: bottom row layout not found; the Scan button may overlap the capture button');
+            return;
+        }
+        this._origBottomLayout = row.layout_manager;
+        row.layout_manager = new CenterSafeBinLayout(center);
+    }
+
+    _restoreBottomRowLayout() {
+        if (!this._origBottomLayout)
+            return;
+        const row = this._ui?._bottomRowContainer;
+        if (row)
+            row.layout_manager = this._origBottomLayout;
+        this._origBottomLayout = null;
     }
 
     _syncVisibility() {
