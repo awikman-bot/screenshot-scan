@@ -14,6 +14,11 @@ set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 
 UUID=$(sed -n 's/.*"uuid": *"\([^"]*\)".*/\1/p' extension/metadata.json)
+# Stop unless the UUID is one plain name (uninstall.sh has the same check).
+if [[ ! "$UUID" =~ ^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$ ]]; then
+    echo "ERROR: could not read a valid \"uuid\" from extension/metadata.json. Nothing was changed." >&2
+    exit 1
+fi
 SCHEMA_ID=org.gnome.shell.extensions.screenshot-scan
 ENABLE=1
 [[ "${1:-}" == "--no-enable" ]] && ENABLE=0

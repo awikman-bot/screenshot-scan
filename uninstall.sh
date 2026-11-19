@@ -11,6 +11,12 @@ set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 
 UUID=$(sed -n 's/.*"uuid": *"\([^"]*\)".*/\1/p' extension/metadata.json)
+# Stop unless the UUID is one plain name. An empty value would make the
+# `rm -rf` below delete the folder that holds ALL of the user's extensions.
+if [[ ! "$UUID" =~ ^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$ ]]; then
+    echo "ERROR: could not read a valid \"uuid\" from extension/metadata.json. Nothing was changed." >&2
+    exit 1
+fi
 DIR="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$UUID"
 
 # Disable: via the Shell if it knows the extension, else edit the list directly.

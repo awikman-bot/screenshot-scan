@@ -7,7 +7,7 @@ ZIP  := build/$(UUID).shell-extension.zip
 .PHONY: help test e2e e2e-missing check lint schemas pack install uninstall fixtures clean
 
 help:
-	@echo "make test         headless pipeline tests (gjs + fixtures, ~1 s)"
+	@echo "make test         pipeline tests (gjs + fixtures) and uninstall.sh tests, ~2 s"
 	@echo "make e2e          end-to-end test in a headless GNOME Shell (~30 s)"
 	@echo "make e2e-missing  e2e with zbar/tesseract hidden (missing-software notices)"
 	@echo "make lint         eslint with GNOME's eslint-config-gnome (installs into node_modules/)"
@@ -20,6 +20,7 @@ help:
 
 test:
 	gjs -m tests/pipeline.test.js
+	tests/uninstall.test.sh
 
 e2e:
 	tests/e2e/run.sh
