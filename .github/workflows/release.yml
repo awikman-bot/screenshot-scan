@@ -26,7 +26,7 @@ jobs:
       - name: Install build tools
         run: dnf install -y --setopt=install_weak_deps=False make gnome-shell gh git python3
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Check tag matches version-name
         run: |
