@@ -65,6 +65,7 @@ extension/                      ← exactly what gets installed / packed
   icons/screenshot-scan-symbolic.svg
 tests/
   pipeline.test.js              headless gjs tests of lib/pipeline.js (make test)
+  uninstall.test.sh             uninstall.sh in a scratch dir with stub commands (make test)
   fixtures/*.png                text, dark text, QR, EAN-13, Code128, blank, mixed
   fixtures/generate.py          regenerates the PNGs (make fixtures)
   e2e/run.sh                    starts a throwaway headless GNOME Shell (make e2e)
@@ -72,7 +73,7 @@ tests/
   e2e/show-image.js             GTK window showing a fixture (for Window-mode test)
 docs/research.md                how other extensions hook the UI; why this design
 docs/screenshot.png             README image (crop of the e2e snapshot; refresh it after UI changes)
-install.sh / uninstall.sh       user install, no sudo
+install.sh / uninstall.sh       user install, no sudo; both stop if the UUID in metadata.json is not valid
 .github/workflows/release.yml   tag v* → builds the zip, publishes a GitHub Release
 .github/dependabot.yml          weekly npm (lint tooling) + GitHub Actions updates
 Makefile                        make help
@@ -147,7 +148,7 @@ simulate the user: `_areaSelector._startX/_startY/_lastX/_lastY` +
 ./install.sh            # checks deps (prints the sudo dnf line if missing), installs, enables
 ./uninstall.sh [--purge]
 make help               # all targets
-make test               # pipeline tests under gjs, ~1 s
+make test               # pipeline tests under gjs + uninstall.sh tests, ~2 s
 make e2e                # real headless GNOME Shell, ~30 s; results + snapshots in tests/e2e/out/main/
 make e2e-missing        # same, with zbarimg/tesseract hidden: checks the missing-software notices
 make lint               # eslint with GNOME's config (npm, no sudo)
@@ -249,5 +250,5 @@ EGO review notes (rules: https://gjs.guide/extensions/review-guidelines/review-g
 
 | GNOME Shell | Status |
 |---|---|
-| 50.6 (Fedora 44) | `make check` passes (24 pipeline tests, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **passed** 2026-11-19 (one fix: Scan button overlapped the capture button, now `CenterSafeBinLayout`) |
+| 50.6 (Fedora 44) | `make check` passes (24 pipeline tests, 13 uninstall checks, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **passed** 2026-11-19 (one fix: Scan button overlapped the capture button, now `CenterSafeBinLayout`) |
 | 51.1 (Fedora 45) | Source diff reviewed (hooked code unchanged). **Run `make check` after upgrading.** |
