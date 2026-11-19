@@ -34,8 +34,8 @@ chose English only, 2026-11-19).
 - Repo: https://github.com/awikman-bot/screenshot-scan (**public** since
   2026-11-19, after the owner's desktop test)
 - License: GPL-2.0-or-later. See `CREDITS.md` for copied code.
-- Supported: GNOME Shell **50** (tested at runtime) and **51** (source-reviewed
-  only, see "Version status"). ESM format, so GNOME 45+ only.
+- Supported: GNOME Shell **50** (tested in CI and on the owner's desktop) and
+  **51** (tested in CI only, see "Version status"). ESM format, so GNOME 45+ only.
 
 ## Rules for agents
 
@@ -79,7 +79,8 @@ tests/
 docs/research.md                how other extensions hook the UI; why this design
 docs/screenshot.png             README image (crop of the e2e snapshot; refresh it after UI changes)
 install.sh / uninstall.sh       user install, no sudo; both stop if the UUID in metadata.json is not valid
-.github/workflows/release.yml   tag v* → builds the zip, publishes a GitHub Release
+.github/workflows/ci.yml        pull requests + main: make check on the newest 3 Fedora releases
+.github/workflows/release.yml   tag v* → runs ci.yml, then builds the zip, publishes a GitHub Release
 .github/dependabot.yml          weekly npm (lint tooling) + GitHub Actions updates
 Makefile                        make help
 eslint.config.js, package.json  lint tooling only (node_modules/ is gitignored)
@@ -188,13 +189,42 @@ Debugging:
 - `install.sh` run by the agent installs into the *agent's* home, not the
   owner's. The owner installs on their desktop themselves.
 
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml` runs on every pull request, on every push to
+`main`, by hand ("Run workflow" on the Actions page) and before every release.
+
+- **Versions:** it asks the `fedora:latest` image for its number and tests
+  that release and the two before it (2026-11-20: Fedora 45, 44, 43 = GNOME
+  Shell 51, 50, 49). No version number is written in the workflow, so a new
+  Fedora release is picked up with no edit.
+- **Per version:** if the GNOME Shell major version is in `shell-version`
+  (`extension/metadata.json`), it runs `make check`. If not, the extension
+  cannot load there, so it runs only `make lint test` and prints a notice.
+  When a new Fedora brings a new GNOME, CI stays green with that notice
+  until the port is done (see "Porting to a new GNOME version").
+- **Failures:** each job keeps `shell.log`, `result.json` and the snapshots
+  as an artifact named `e2e-fedora-<N>` (Actions page → the run → Artifacts).
+- **Container setup** (needed for GNOME Shell in a container, not on a
+  desktop): `--privileged`, because GNOME encodes screenshots in a `bwrap`
+  sandbox (glycin) that a default container blocks; a system D-Bus; and
+  `python3 -m dbusmock --template logind`, because the image has no systemd
+  login service. To reproduce a CI failure locally, no sudo:
+  ```
+  podman run --rm -it --privileged -v "$PWD":/src -w /src registry.fedoraproject.org/fedora:45 bash
+  # then, inside: the "Install packages", "Start system D-Bus…" and "Run checks" commands from ci.yml
+  ```
+- The repo owner decides in the GitHub settings whether a green CI is
+  required before a pull request can merge (branch protection on `main`).
+
 ## Releasing
 
 1. Bump `"version-name"` in `extension/metadata.json` (semver, e.g. `0.2.0`)
    and commit after `make check`.
-2. `git tag v0.2.0 && git push origin v0.2.0`. The Release workflow checks the
-   tag matches `version-name`, runs `make pack` in a Fedora container and
-   attaches the zip to a GitHub Release. Users install it with
+2. `git tag v0.2.0 && git push origin v0.2.0`. The Release workflow first
+   runs the whole CI workflow (see "CI"); if any check fails, no release is
+   made. Then it checks the tag matches `version-name`, runs `make pack` in
+   a Fedora container and attaches the zip to a GitHub Release. Users install it with
    `gnome-extensions install --force <zip>`, then log out and in.
 3. extensions.gnome.org (EGO): the owner uploads the same zip by hand at
    https://extensions.gnome.org/upload/ under their own account (created
@@ -211,7 +241,8 @@ EGO review notes (rules: https://gjs.guide/extensions/review-guidelines/review-g
   and `disable()` cancels.
 - Clipboard use must stay mentioned in the metadata description.
 - `shell-version` must list only released versions (no future ones). 51 is
-  listed but only source-reviewed; see "Version status".
+  listed and passes the e2e tests in CI, but has no desktop test yet; see
+  "Version status".
 
 ## Manual desktop test checklist (for the owner)
 
@@ -256,4 +287,5 @@ EGO review notes (rules: https://gjs.guide/extensions/review-guidelines/review-g
 | GNOME Shell | Status |
 |---|---|
 | 50.6 (Fedora 44) | `make check` passes (24 pipeline tests, 13 uninstall checks, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **passed** 2026-11-19 (one fix: Scan button overlapped the capture button, now `CenterSafeBinLayout`) |
-| 51.1 (Fedora 45) | Source diff reviewed (hooked code unchanged). **Run `make check` after upgrading.** |
+| 51.1 (Fedora 45) | `make check` passes in CI (same counts), 2026-11-20. Not yet tested on a real desktop. |
+| 49.10 (Fedora 43) | Not supported (not in `shell-version`). CI runs lint and `make test` only. |
