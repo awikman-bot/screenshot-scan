@@ -81,6 +81,7 @@ docs/screenshot.png             README image (crop of the e2e snapshot; refresh 
 install.sh / uninstall.sh       user install, no sudo; both stop if the UUID in metadata.json is not valid
 .github/workflows/ci.yml        pull requests + main: make check on the newest 3 Fedora releases
 .github/workflows/release.yml   tag v* → runs ci.yml, then builds the zip, publishes a GitHub Release
+.github/workflows/main-build.yml after CI passes on main: zip → rolling pre-release "main-build"
 .github/dependabot.yml          weekly npm (lint tooling) + GitHub Actions updates
 Makefile                        make help
 eslint.config.js, package.json  lint tooling only (node_modules/ is gitignored)
@@ -217,6 +218,20 @@ Debugging:
 - **"CI passed"** is a summary job that succeeds only if every version
   passed. Branch protection on `main` requires this one check (not the
   per-version names, which change with each Fedora release). Keep its name.
+
+## Builds from main
+
+After every merge to `main` whose CI passes, `.github/workflows/main-build.yml`
+builds the zip and replaces the pre-release **"Latest build from main"**
+(tag `main-build`). Fixed download URL:
+https://github.com/awikman-bot/screenshot-scan/releases/download/main-build/screenshot-scan@awikman-bot.github.io.shell-extension.zip
+
+- For testing an unreleased change on a desktop; not for extensions.gnome.org.
+- The zip keeps the `version-name` of the last release; the release notes
+  name the commit.
+- It is a pre-release, so `releases/latest` still means the newest `v*` tag.
+- `workflow_run` workflows only run from the default branch, so a change to
+  this file can only be tested after it is merged.
 
 ## Releasing
 

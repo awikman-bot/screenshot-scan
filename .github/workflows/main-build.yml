@@ -1,0 +1,60 @@
+# Builds the extension zip after every successful CI run on main and
+# publishes it as the rolling pre-release "Latest build from main" (tag
+# main-build). The download URL never changes:
+#   https://github.com/awikman-bot/screenshot-scan/releases/download/main-build/screenshot-scan@awikman-bot.github.io.shell-extension.zip
+#
+# It is a pre-release, so "latest release" still points to the newest real
+# version (a v* tag, see release.yml). The zip carries the version-name of
+# the last release; the release notes name the commit it was built from.
+#
+# Separate from ci.yml on purpose: release.yml calls ci.yml with read-only
+# permissions, and a job in ci.yml that asks for write access would break it.
+
+name: Main build
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A newer merge replaces an older build that is still running.
+concurrency:
+  group: main-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    permissions:
+      contents: write # to replace the main-build pre-release
+    runs-on: ubuntu-latest
+    # Fedora ships the gnome-extensions tool used by `make pack`.
+    container: fedora:44
+    steps:
+      - name: Install build tools
+        run: dnf install -y --setopt=install_weak_deps=False make gnome-shell gh git
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Build zip
+        run: make pack
+
+      - name: Replace the main-build pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          gh release delete main-build --cleanup-tag --yes || true
+          gh release create main-build build/*.shell-extension.zip \
+            --prerelease --target "$SHA" \
+            --title "Latest build from main" \
+            --notes "Built automatically from commit $SHA after CI passed. For testing; for normal use take the [latest release](https://github.com/$GH_REPO/releases/latest)."
