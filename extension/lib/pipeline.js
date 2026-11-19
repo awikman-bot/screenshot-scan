@@ -198,7 +198,7 @@ export async function findMissingPackages(languages, cancellable = null, mode = 
     const needsZbar = mode !== ResultMode.TEXT;
     const needsTesseract = mode !== ResultMode.CODES;
     const missing = findMissingTools()
-        .filter(t => (t.program === 'zbarimg' ? needsZbar : needsTesseract))
+        .filter(t => t.program === 'zbarimg' ? needsZbar : needsTesseract)
         .map(t => t.package);
     if (needsTesseract && !missing.includes('tesseract')) {
         const installed = await listInstalledLanguages(cancellable);

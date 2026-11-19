@@ -270,7 +270,8 @@ export default class E2EHarness extends Extension {
         // Same lookup as _storeScreenshot() in js/ui/screenshot.js.
         const screenshotsDir = GLib.build_filenamev([
             GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES) || GLib.get_home_dir(),
-            'Screenshots']);
+            'Screenshots',
+        ]);
         const runtimeDir = GLib.get_user_runtime_dir();
 
         await this._check('extension is ACTIVE', () => {

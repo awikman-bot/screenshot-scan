@@ -98,7 +98,7 @@ export default class ScreenshotScanPreferences extends ExtensionPreferences {
                 active: current().includes(lang),
             });
             row.connect('notify::active', () => {
-                let langs = current().filter(l => l !== lang);
+                const langs = current().filter(l => l !== lang);
                 if (row.active)
                     langs.push(lang); // keep the user's order; first = primary
                 if (langs.length === 0) {

@@ -264,7 +264,8 @@ export class ScanModePatch {
         this._originalCapture = ui[CAPTURE_METHOD];
         const original = this._originalCapture;
 
-        this._captureWrapper = async function (...args) {
+        // Not async: both branches already return a promise.
+        this._captureWrapper = function (...args) {
             if (patch._enabled && patch.scanActive && this._shotButton.checked)
                 return patch._captureForScan();
             return original.apply(this, args);

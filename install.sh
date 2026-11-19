@@ -43,10 +43,11 @@ else
     missing_pkgs+=(tesseract tesseract-langpack-eng)
 fi
 
-if (( ${#missing_build[@]} + ${#missing_pkgs[@]} > 0 )); then
+all_missing=("${missing_build[@]}" "${missing_pkgs[@]}")
+if (( ${#all_missing[@]} > 0 )); then
     say "Screenshot Scan needs some system packages. Run this, then run ./install.sh again:"
     say ""
-    say "    sudo dnf install ${missing_build[*]} ${missing_pkgs[*]}"
+    say "    sudo dnf install ${all_missing[*]}"
     say ""
     say "  zbar        -> zbarimg, reads QR codes and barcodes"
     say "  tesseract   -> OCR engine; tesseract-langpack-XXX = language data"
@@ -67,7 +68,8 @@ mkdir -p build
 glib-compile-schemas extension/schemas
 zip="build/$UUID.shell-extension.zip"
 gnome-extensions pack extension --force --out-dir=build \
-    --extra-source=lib --extra-source=icons >/dev/null
+    --extra-source=lib --extra-source=icons \
+    --extra-source=../LICENSE --extra-source=../CREDITS.md >/dev/null
 gnome-extensions install --force "$zip"
 say "Installed to ${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$UUID"
 

@@ -25,7 +25,8 @@ export function tempDir() {
  */
 export function writeTempPng(bytes, cancellable = null) {
     const path = GLib.build_filenamev([
-        tempDir(), `${TEMP_PREFIX}${GLib.uuid_string_random()}${TEMP_SUFFIX}`]);
+        tempDir(), `${TEMP_PREFIX}${GLib.uuid_string_random()}${TEMP_SUFFIX}`,
+    ]);
     const file = Gio.File.new_for_path(path);
     return new Promise((resolve, reject) => {
         file.replace_contents_bytes_async(bytes, null, false,

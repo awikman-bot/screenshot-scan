@@ -1,0 +1,16 @@
+{
+  "name": "screenshot-scan",
+  "private": true,
+  "description": "Dev tooling only (eslint). The extension itself has no npm dependencies.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/config-helpers": "^0.4.0",
+    "eslint": "^9.0.0",
+    "eslint-config-gnome": "git+https://gitlab.gnome.org/World/javascript/eslint-config-gnome.git#c479d059e8d9ea99c3b53c2ea43abf7fdb05eb51",
+    "globals": "^16.0.0"
+  }
+}
