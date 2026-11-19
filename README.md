@@ -16,16 +16,28 @@ languages in the extension's preferences.
 
 ## Install (Fedora, GNOME 50/51)
 
+First install the scanning tools:
+
 ```
 sudo dnf install zbar tesseract tesseract-langpack-eng
-git clone https://github.com/awikman-bot/screenshot-scan && cd screenshot-scan && ./install.sh
 ```
 
-Then log out and back in. If a dependency is missing, `./install.sh` prints
-the exact `dnf` command to run. For more OCR languages, install e.g.
+Then install the extension in one of these ways:
+
+- **From GNOME Extensions:**
+  [extensions.gnome.org/extension/11869/screenshot-scan](https://extensions.gnome.org/extension/11869/screenshot-scan/).
+- **From a release zip:** download `screenshot-scan@awikman-bot.github.io.shell-extension.zip`
+  from the [latest release](https://github.com/awikman-bot/screenshot-scan/releases/latest), then
+  `gnome-extensions install --force screenshot-scan@awikman-bot.github.io.shell-extension.zip`.
+- **From source:**
+  `git clone https://github.com/awikman-bot/screenshot-scan && cd screenshot-scan && ./install.sh`.
+  If a dependency is missing, `./install.sh` prints the exact `dnf` command to run.
+
+Then log out and back in. For more OCR languages, install e.g.
 `tesseract-langpack-fin` and enable it in the preferences.
 
-Uninstall: `./uninstall.sh` (add `--purge` to also delete settings).
+Uninstall: remove it in the Extensions app, or run `./uninstall.sh` from a
+source checkout (add `--purge` to also delete settings).
 
 ## Dependencies
 
