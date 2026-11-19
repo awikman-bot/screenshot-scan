@@ -125,13 +125,26 @@ export function countLines(result) {
 }
 
 /**
+ * Longest a single tool run may take. A full 4K screen takes tesseract a few
+ * seconds; anything near a minute is stuck or was fed something hostile.
+ */
+export const COMMAND_TIMEOUT_MS = 60_000;
+
+/**
  * Runs a program and collects its output without blocking the main loop.
+ *
+ * The process is killed (SIGKILL) when `cancellable` is cancelled or the
+ * timeout passes, so a replaced, abandoned or stuck scan does not keep
+ * running in the background with a screenshot in memory.
  *
  * @param {string[]} argv
  * @param {Gio.Cancellable|null} cancellable
+ * @param {object} [options]
+ * @param {number} [options.timeoutMs] 0 means no timeout
  * @returns {Promise<{status: number, stdout: string, stderr: string}>}
+ *   rejects with Gio.IOErrorEnum.CANCELLED or .TIMED_OUT
  */
-export function runCommand(argv, cancellable = null) {
+export function runCommand(argv, cancellable = null, {timeoutMs = COMMAND_TIMEOUT_MS} = {}) {
     const launcher = new Gio.SubprocessLauncher({
         flags: Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
     });
@@ -143,10 +156,36 @@ export function runCommand(argv, cancellable = null) {
     launcher.setenv('LC_ALL', 'C.UTF-8', true);
 
     const proc = launcher.spawnv(argv);
+
+    // If already cancelled, the handler runs right here and the process dies
+    // before it does any work.
+    const cancelId = cancellable?.connect(() => proc.force_exit()) ?? 0;
+
+    let timedOut = false;
+    let timeoutId = 0;
+    if (timeoutMs > 0) {
+        timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, timeoutMs, () => {
+            timeoutId = 0;
+            timedOut = true;
+            proc.force_exit();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
     return new Promise((resolve, reject) => {
         proc.communicate_utf8_async(null, cancellable, (p, res) => {
+            // Runs from the main loop, never from inside the cancel handler,
+            // so disconnecting here cannot deadlock.
+            if (cancelId)
+                cancellable.disconnect(cancelId);
+            if (timeoutId)
+                GLib.source_remove(timeoutId);
             try {
                 const [, stdout, stderr] = p.communicate_utf8_finish(res);
+                if (timedOut) {
+                    throw new GLib.Error(Gio.IOErrorEnum, Gio.IOErrorEnum.TIMED_OUT,
+                        `${argv[0]} took longer than ${Math.round(timeoutMs / 1000)} s and was stopped`);
+                }
                 resolve({
                     status: p.get_if_exited() ? p.get_exit_status() : -1,
                     stdout: stdout ?? '',

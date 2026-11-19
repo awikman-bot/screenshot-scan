@@ -205,6 +205,10 @@ Debugging:
 - OCR quality is tesseract's: small (< ~10 px) or stylised text, and text on
   photos, can come out wrong. There is no upscaling or preprocessing.
 - Each extra OCR language makes OCR slower.
+- A tool run (`zbarimg` or `tesseract`) is killed after 60 s
+  (`COMMAND_TIMEOUT_MS` in `lib/pipeline.js`) and the scan fails with a
+  notification. It is also killed when a new capture replaces the scan or
+  the extension is disabled (screen lock).
 - Hidden in portal / D-Bus "interactive screenshot" mode on purpose (the
   calling app expects a file).
 - Only Fedora package names are given in messages (`dnf`).
@@ -213,5 +217,5 @@ Debugging:
 
 | GNOME Shell | Status |
 |---|---|
-| 50.6 (Fedora 44) | `make check` passes (19 pipeline tests, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **passed** 2026-11-19 (one fix: Scan button overlapped the capture button, now `CenterSafeBinLayout`) |
+| 50.6 (Fedora 44) | `make check` passes (22 pipeline tests, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **passed** 2026-11-19 (one fix: Scan button overlapped the capture button, now `CenterSafeBinLayout`) |
 | 51.1 (Fedora 45) | Source diff reviewed (hooked code unchanged). **Run `make check` after upgrading.** |

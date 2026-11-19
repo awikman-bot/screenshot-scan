@@ -7,6 +7,7 @@
 // Needs zbarimg and tesseract (with English data) on $PATH.
 // Exit code 0 = all passed. Fixtures are made by tests/fixtures/generate.py.
 
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import System from 'system';
 
@@ -53,6 +54,68 @@ function eq(actual, expected, what = 'value') {
 function ok(cond, msg) {
     if (!cond)
         throw new Error(msg);
+}
+
+/**
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+    return new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+        resolve();
+        return GLib.SOURCE_REMOVE;
+    }));
+}
+
+/**
+ * @param {number} pid
+ * @returns {boolean} false once the process is gone (or a zombie)
+ */
+function isRunning(pid) {
+    try {
+        const [, bytes] = GLib.file_get_contents(`/proc/${pid}/stat`);
+        const stat = new TextDecoder().decode(bytes);
+        // "pid (comm) state …"; comm may hold spaces, so cut after the last ')'
+        return stat.slice(stat.lastIndexOf(')') + 2)[0] !== 'Z';
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Starts `sleep 30` through runCommand and waits until its pid is known.
+ *
+ * @param {Gio.Cancellable|null} cancellable
+ * @param {object} [options] passed to runCommand
+ * @returns {Promise<{pid: number, done: Promise<string>}>} `done` resolves
+ *   to 'finished' or to the name of the Gio.IOErrorEnum it was rejected with
+ */
+async function startSleeper(cancellable, options) {
+    const pidFile = GLib.build_filenamev([GLib.get_tmp_dir(),
+        `screenshot-scan-test-${GLib.uuid_string_random()}.pid`]);
+    const done = P.runCommand(
+        ['sh', '-c', 'echo $$ > "$1"; exec sleep 30', 'sh', pidFile], cancellable, options)
+        .then(() => 'finished', e => {
+            for (const code of ['CANCELLED', 'TIMED_OUT']) {
+                if (e instanceof GLib.Error && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum[code]))
+                    return code;
+            }
+            return `unexpected: ${e.message}`;
+        });
+    try {
+        for (let i = 0; i < 100; i++) {
+            const [found, bytes] = GLib.file_test(pidFile, GLib.FileTest.EXISTS)
+                ? GLib.file_get_contents(pidFile) : [false, null];
+            const pid = found ? parseInt(new TextDecoder().decode(bytes)) : NaN;
+            if (pid > 0)
+                return {pid, done};
+            // eslint-disable-next-line no-await-in-loop
+            await sleep(20);
+        }
+        throw new Error('the test process did not start');
+    } finally {
+        GLib.unlink(pidFile);
+    }
 }
 
 /** OCR may differ by tesseract version, so compare line-by-line content. */
@@ -114,6 +177,38 @@ async function main() {
     await test('findMissingPackages reports an uninstalled language', async () => {
         const missing = await P.findMissingPackages(['eng', 'zzz']);
         eq(missing, ['tesseract-langpack-zzz']);
+    });
+
+    // ---- stopping tools ------------------------------------------------
+    await test('runCommand kills the process when cancelled', async () => {
+        const cancellable = new Gio.Cancellable();
+        const {pid, done} = await startSleeper(cancellable);
+        ok(isRunning(pid), 'the test process should be running');
+        cancellable.cancel();
+        eq(await done, 'CANCELLED');
+        await sleep(100);
+        ok(!isRunning(pid), `process ${pid} is still running after cancel`);
+    });
+
+    await test('runCommand kills the process after the timeout', async () => {
+        const start = GLib.get_monotonic_time();
+        const {pid, done} = await startSleeper(null, {timeoutMs: 300});
+        eq(await done, 'TIMED_OUT');
+        ok(GLib.get_monotonic_time() - start < 5_000_000, 'timeout took too long');
+        await sleep(100);
+        ok(!isRunning(pid), `process ${pid} is still running after the timeout`);
+    });
+
+    await test('runCommand does not start work when already cancelled', async () => {
+        const cancellable = new Gio.Cancellable();
+        cancellable.cancel();
+        let code = 'finished';
+        try {
+            await P.runCommand(['sleep', '30'], cancellable);
+        } catch (e) {
+            code = e.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED) ? 'CANCELLED' : e.message;
+        }
+        eq(code, 'CANCELLED');
     });
 
     // ---- fixtures, default (auto) mode ----------------------------------
