@@ -3,7 +3,7 @@
 #
 # The only package manifest is package.json, which holds dev tooling (eslint).
 # The extension itself ships no npm dependencies, so these PRs never change
-# what users install. The github-actions entry keeps the release workflow current.
+# what users install. The github-actions entry keeps the CI and release workflows current.
 
 version: 2
 updates:
