@@ -73,6 +73,8 @@ tests/
 docs/research.md                how other extensions hook the UI; why this design
 docs/screenshot.png             README image (crop of the e2e snapshot; refresh it after UI changes)
 install.sh / uninstall.sh       user install, no sudo
+.github/workflows/release.yml   tag v* → builds the zip, publishes a GitHub Release
+.github/dependabot.yml          weekly npm (lint tooling) + GitHub Actions updates
 Makefile                        make help
 eslint.config.js, package.json  lint tooling only (node_modules/ is gitignored)
 ```
@@ -179,6 +181,30 @@ Debugging:
   `make e2e` sets up its own HOME/runtime dir under `tests/e2e/out/`.
 - `install.sh` run by the agent installs into the *agent's* home, not the
   owner's. The owner installs on their desktop themselves.
+
+## Releasing
+
+1. Bump `"version-name"` in `extension/metadata.json` (semver, e.g. `0.2.0`)
+   and commit after `make check`.
+2. `git tag v0.2.0 && git push origin v0.2.0`. The Release workflow checks the
+   tag matches `version-name`, runs `make pack` in a Fedora container and
+   attaches the zip to a GitHub Release. Users install it with
+   `gnome-extensions install --force <zip>`, then log out and in.
+3. extensions.gnome.org (EGO): the owner uploads the same zip by hand at
+   https://extensions.gnome.org/upload/ under their own account (created
+   2026-11-19). EGO has no token upload API, so this is not automated; do not
+   store the owner's EGO password anywhere.
+
+EGO review notes (rules: https://gjs.guide/extensions/review-guidelines/review-guidelines.html):
+
+- Since Dec 2025 EGO rejects AI-generated extensions; this one is, and the
+  owner knows. Expect rejection or questions; never hide the origin.
+- Spawning tesseract/zbarimg is allowed only as "unavoidable": OCR and
+  barcode decoding have no GJS-only option. Processes must exit cleanly:
+  `runCommand` kills the child on cancel (tested), and `disable()` cancels.
+- Clipboard use must stay mentioned in the metadata description.
+- `shell-version` must list only released versions (no future ones). 51 is
+  listed but only source-reviewed; see "Version status".
 
 ## Manual desktop test checklist (for the owner)
 
