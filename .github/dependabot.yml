@@ -19,6 +19,11 @@ updates:
     ignore:
       # Pinned to a GitLab commit on purpose; Dependabot cannot track it.
       - dependency-name: "eslint-config-gnome"
+      # eslint-config-gnome (and gnome-shell itself) targets ESLint 9; with
+      # ESLint 10 its no-shadow rule rejects the GObject.registerClass idiom.
+      # Take ESLint majors only once eslint-config-gnome supports them.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
