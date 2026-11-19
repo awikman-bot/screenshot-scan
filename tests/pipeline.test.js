@@ -138,6 +138,26 @@ async function main() {
         eq(P.parseZbarOutput(''), []);
     });
 
+    await test('stripControlChars keeps only text, tabs and newlines', () => {
+        eq(P.stripControlChars('a\tb\nc'), 'a\tb\nc');
+        eq(P.stripControlChars('a\u0000b\u0007c\u0008d\u007fe'), 'abcde');
+        // ESC sequences: colour codes and the bracketed-paste end marker
+        eq(P.stripControlChars('\u001b[31mred\u001b[0m'), '[31mred[0m');
+        eq(P.stripControlChars('x\u001b[201~y'), 'x[201~y');
+        // C1 controls, including the 8-bit CSI
+        eq(P.stripControlChars('a\u0085b\u009bc'), 'abc');
+        // printable non-ASCII is untouched
+        eq(P.stripControlChars('ääkkönen – 日本語 🙂'), 'ääkkönen – 日本語 🙂');
+        eq(P.stripControlChars(null), '');
+    });
+
+    await test('tool output is stripped of control characters', () => {
+        eq(P.parseZbarOutput('ls\u001b[201~\nrm -rf x\u0000\n'), ['ls[201~', 'rm -rf x']);
+        eq(P.parseZbarOutput('a\rb\r\nc'), ['a', 'b', 'c']);
+        eq(P.cleanOcrText('Hi\u001b]0;title\u0007 there\u0008\n'), 'Hi]0;title there');
+        eq(P.formatResult(P.parseZbarOutput('A\u001bB\n'), '', 'auto'), 'AB');
+    });
+
     await test('parseLanguages validates and defaults to eng', () => {
         eq(P.parseLanguages('eng+fin'), ['eng', 'fin']);
         eq(P.parseLanguages(' eng, swe  eng '), ['eng', 'swe']);
