@@ -20,6 +20,11 @@ area, a window or the screen:
 
 Everything runs locally, with no network access.
 
+What is on screen is untrusted input (anyone can show you a QR code). Tool
+output is stripped of control characters, keeping tab and newline
+(`stripControlChars` in `lib/pipeline.js`), so a pasted result cannot send
+escape sequences to a terminal.
+
 Default result (`result-mode = auto`): code payloads one per line if any were
 found, otherwise the OCR text. Other modes: `codes`, `text`, `both` (codes,
 blank line, text). OCR languages: `ocr-languages`, default `eng` (the owner
@@ -239,5 +244,5 @@ EGO review notes (rules: https://gjs.guide/extensions/review-guidelines/review-g
 
 | GNOME Shell | Status |
 |---|---|
-| 50.6 (Fedora 44) | `make check` passes (20 pipeline tests, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **passed** 2026-11-19 (one fix: Scan button overlapped the capture button, now `CenterSafeBinLayout`) |
+| 50.6 (Fedora 44) | `make check` passes (21 pipeline tests, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **passed** 2026-11-19 (one fix: Scan button overlapped the capture button, now `CenterSafeBinLayout`) |
 | 51.1 (Fedora 45) | Source diff reviewed (hooked code unchanged). **Run `make check` after upgrading.** |
