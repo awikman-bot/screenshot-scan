@@ -214,8 +214,9 @@ Debugging:
   podman run --rm -it --privileged -v "$PWD":/src -w /src registry.fedoraproject.org/fedora:45 bash
   # then, inside: the "Install packages", "Start system D-Bus…" and "Run checks" commands from ci.yml
   ```
-- The repo owner decides in the GitHub settings whether a green CI is
-  required before a pull request can merge (branch protection on `main`).
+- **"CI passed"** is a summary job that succeeds only if every version
+  passed. Branch protection on `main` requires this one check (not the
+  per-version names, which change with each Fedora release). Keep its name.
 
 ## Releasing
 
