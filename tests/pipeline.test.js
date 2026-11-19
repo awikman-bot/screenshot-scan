@@ -7,6 +7,7 @@
 // Needs zbarimg and tesseract (with English data) on $PATH.
 // Exit code 0 = all passed. Fixtures are made by tests/fixtures/generate.py.
 
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import System from 'system';
 
@@ -178,6 +179,23 @@ async function main() {
             threw = true;
         }
         ok(threw, 'expected an error');
+    });
+
+    await test('cancelling runCommand kills the process', async () => {
+        const cancellable = new Gio.Cancellable();
+        const marker = `screenshot-scan-cancel-${GLib.random_int()}`;
+        const started = Date.now();
+        const run = P.runCommand(['sh', '-c', `exec -a ${marker} sleep 30`], cancellable);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, () => {
+            cancellable.cancel();
+            return GLib.SOURCE_REMOVE;
+        });
+        try {
+            await run;
+        } catch {}
+        ok(Date.now() - started < 5000, 'runCommand did not return soon after cancel');
+        const [, out] = GLib.spawn_command_line_sync(`pgrep -f ${marker}`);
+        eq(new TextDecoder().decode(out).trim(), '', 'process still running');
     });
 }
 

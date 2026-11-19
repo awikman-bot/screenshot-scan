@@ -143,8 +143,13 @@ export function runCommand(argv, cancellable = null) {
     launcher.setenv('LC_ALL', 'C.UTF-8', true);
 
     const proc = launcher.spawnv(argv);
+    // Cancelling only stops the wait; also stop the process itself so that
+    // disable() or a newer scan never leaves a tesseract run behind.
+    const cancelId = cancellable?.connect(() => proc.force_exit()) ?? 0;
     return new Promise((resolve, reject) => {
         proc.communicate_utf8_async(null, cancellable, (p, res) => {
+            if (cancelId)
+                cancellable.disconnect(cancelId);
             try {
                 const [, stdout, stderr] = p.communicate_utf8_finish(res);
                 resolve({
