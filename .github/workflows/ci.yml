@@ -99,3 +99,21 @@ jobs:
             tests/e2e/out/*/shell.log
             tests/e2e/out/*/result.json
             tests/e2e/out/*/*.png
+
+  # One fixed check name for branch protection. The per-version job names
+  # ("Fedora 45", …) change when a new Fedora is released, so requiring them
+  # would block every pull request once an old version drops out.
+  passed:
+    name: CI passed
+    needs: [versions, check]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: All versions passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for r in $RESULTS; do
+            [ "$r" = success ] || { echo "::error::A CI job did not succeed ($r)"; exit 1; }
+          done
