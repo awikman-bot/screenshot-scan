@@ -1,11 +1,21 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# Dependabot version updates.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# The only package manifest is package.json, which holds dev tooling (eslint).
+# The extension itself ships no npm dependencies, so these PRs never change
+# what users install. Add a "github-actions" entry if CI workflows appear.
 
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
       interval: "weekly"
+    # Dev-only tooling: one grouped PR per week instead of one per package.
+    groups:
+      dev-tooling:
+        patterns:
+          - "*"
+    ignore:
+      # Pinned to a GitLab commit on purpose; Dependabot cannot track it.
+      - dependency-name: "eslint-config-gnome"
