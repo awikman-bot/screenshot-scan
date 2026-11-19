@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<!-- Scan frame (four corners) around three text lines. Original artwork. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <g fill="#222222">
+    <path d="M1 1h4v1.5H2.5V5H1z"/>
+    <path d="M15 1h-4v1.5h2.5V5H15z"/>
+    <path d="M1 15h4v-1.5H2.5V11H1z"/>
+    <path d="M15 15h-4v-1.5h2.5V11H15z"/>
+    <rect x="4" y="5" width="8" height="1.5" rx="0.75"/>
+    <rect x="4" y="7.25" width="8" height="1.5" rx="0.75"/>
+    <rect x="4" y="9.5" width="5" height="1.5" rx="0.75"/>
+  </g>
+</svg>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<schemalist>
+  <enum id="org.gnome.shell.extensions.screenshot-scan.ResultMode">
+    <value nick="auto" value="0"/>
+    <value nick="codes" value="1"/>
+    <value nick="text" value="2"/>
+    <value nick="both" value="3"/>
+  </enum>
+
+  <schema id="org.gnome.shell.extensions.screenshot-scan"
+          path="/org/gnome/shell/extensions/screenshot-scan/">
+    <key name="result-mode" enum="org.gnome.shell.extensions.screenshot-scan.ResultMode">
+      <default>'auto'</default>
+      <summary>What to copy to the clipboard</summary>
+      <description>
+        auto: the decoded QR/barcode payloads (one per line) if any were found, otherwise the OCR text.
+        codes: only QR/barcode payloads.
+        text: only OCR text.
+        both: payloads, a blank line, then the OCR text.
+      </description>
+    </key>
+    <key name="ocr-languages" type="s">
+      <default>'eng'</default>
+      <summary>OCR languages</summary>
+      <description>
+        Tesseract language codes joined with "+", e.g. "eng+fin". Each needs
+        its Fedora package, e.g. tesseract-langpack-fin.
+      </description>
+    </key>
+    <key name="show-notifications" type="b">
+      <default>true</default>
+      <summary>Show a notification after each scan</summary>
+      <description>
+        Error notifications (missing software, failed scans) are always shown.
+      </description>
+    </key>
+  </schema>
+</schemalist>

@@ -1,0 +1,7 @@
+{
+  "uuid": "screenshot-scan-e2e@awikman-bot.github.io",
+  "name": "Screenshot Scan e2e harness (test only, never install)",
+  "description": "Drives the real screenshot UI in a headless GNOME Shell and checks Screenshot Scan. Used by tests/e2e/run.sh.",
+  "shell-version": ["50", "51"],
+  "url": "https://github.com/awikman-bot/screenshot-scan"
+}

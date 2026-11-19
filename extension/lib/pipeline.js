@@ -185,16 +185,22 @@ export async function listInstalledLanguages(cancellable = null) {
 }
 
 /**
- * Checks everything the pipeline needs and returns the Fedora packages that
- * are missing, e.g. `['zbar', 'tesseract-langpack-fin']`.
+ * Checks what the given result mode needs and returns the Fedora packages
+ * that are missing, e.g. `['zbar', 'tesseract-langpack-fin']`.
  *
  * @param {string[]} languages
  * @param {Gio.Cancellable|null} cancellable
+ * @param {string} mode one of ResultMode; `codes` skips tesseract checks,
+ *   `text` skips zbar
  * @returns {Promise<string[]>}
  */
-export async function findMissingPackages(languages, cancellable = null) {
-    const missing = findMissingTools().map(t => t.package);
-    if (!missing.includes('tesseract')) {
+export async function findMissingPackages(languages, cancellable = null, mode = ResultMode.AUTO) {
+    const needsZbar = mode !== ResultMode.TEXT;
+    const needsTesseract = mode !== ResultMode.CODES;
+    const missing = findMissingTools()
+        .filter(t => (t.program === 'zbarimg' ? needsZbar : needsTesseract))
+        .map(t => t.package);
+    if (needsTesseract && !missing.includes('tesseract')) {
         const installed = await listInstalledLanguages(cancellable);
         for (const lang of languages) {
             if (!installed.includes(lang))

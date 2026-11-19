@@ -1,0 +1,12 @@
+{
+  "uuid": "screenshot-scan@awikman-bot.github.io",
+  "name": "Screenshot Scan",
+  "description": "Adds a Scan mode to the built-in screenshot UI (Print Screen). Select an area, a window or the screen to read QR codes, barcodes and text, and copy the result to the clipboard. Everything runs locally; no screenshot file is saved.\n\nRequires zbar and tesseract (Fedora: sudo dnf install zbar tesseract tesseract-langpack-eng).",
+  "shell-version": [
+    "50",
+    "51"
+  ],
+  "url": "https://github.com/awikman-bot/screenshot-scan",
+  "settings-schema": "org.gnome.shell.extensions.screenshot-scan",
+  "version-name": "0.1.0"
+}
