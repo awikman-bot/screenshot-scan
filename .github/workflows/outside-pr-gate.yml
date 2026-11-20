@@ -1,0 +1,63 @@
+# Stops a pull request from someone outside the project being merged before
+# a maintainer has read it. See AGENTS.md, "Pull requests from outside".
+#
+# The job "Outside PR reviewed":
+#   - passes at once when the author can push to this repo anyway (owner,
+#     collaborators) and for Dependabot;
+#   - for everyone else fails, until a maintainer adds the label
+#     "maintainer-reviewed". Any new push makes it fail again.
+#
+# It only blocks merging once the owner adds "Outside PR reviewed" to the
+# required checks of the `main` branch protection.
+#
+# Security notes for editors of this file:
+#   - `pull_request_target` runs THIS file from the default branch (main),
+#     never the copy in the pull request, so a pull request cannot switch
+#     the gate off. For the same reason a change to this file can only be
+#     tried after it is merged.
+#   - It must never check out or run code from the pull request: this job has
+#     a token that can write. The checkout below takes main only.
+#   - Values from the event go through `env:`, never straight into `run:`.
+#   - A skipped job counts as a passed check. Do not add `if:` to this job.
+
+name: Outside PR gate
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Outside PR reviewed
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # only to remove a stale label
+    env:
+      GATE_LABEL: maintainer-reviewed
+      ACTION: ${{ github.event.action }}
+      ASSOCIATION: ${{ github.event.pull_request.author_association }}
+      AUTHOR: ${{ github.event.pull_request.user.login }}
+      EVENT_LABEL: ${{ github.event.label.name }}
+    steps:
+      - name: Check out the gate script from main
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      # Convenience only (the decision below does not depend on it): take the
+      # label off when the commits change, so a maintainer can add it again.
+      - name: Remove a stale label
+        if: ${{ github.event.action != 'labeled' && github.event.action != 'unlabeled' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LABEL_URL: repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels/maintainer-reviewed
+        run: gh api -X DELETE "$LABEL_URL" >/dev/null 2>&1 || true
+
+      - name: Decide
+        run: .github/scripts/outside-pr-gate.sh
