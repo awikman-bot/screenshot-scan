@@ -75,6 +75,7 @@ extension/                      ← exactly what gets installed / packed
 tests/
   pipeline.test.js              headless gjs tests of lib/pipeline.js (make test)
   uninstall.test.sh             uninstall.sh in a scratch dir with stub commands (make test)
+  commit-on-branch.test.sh      the "release only from main" check, on a throwaway git repo (make test)
   fixtures/*.png                text, dark text, QR, EAN-13, Code128, blank, mixed
   fixtures/generate.py          regenerates the PNGs (make fixtures)
   e2e/run.sh                    starts a throwaway headless GNOME Shell (make e2e)
@@ -84,7 +85,8 @@ docs/research.md                how other extensions hook the UI; why this desig
 docs/screenshot.png             README image (crop of the e2e snapshot; refresh it after UI changes)
 install.sh / uninstall.sh       user install, no sudo; both stop if the UUID in metadata.json is not valid
 .github/workflows/ci.yml        pull requests + main: make check on the newest 3 Fedora releases
-.github/workflows/release.yml   tag v* → runs ci.yml, then builds the zip, publishes a GitHub Release
+.github/workflows/release.yml   tag v* → tag must be on main, runs ci.yml, then builds the zip, publishes a GitHub Release
+.github/scripts/commit-on-branch.sh  the "tag is on main" check used by release.yml
 .github/workflows/main-build.yml after CI passes on main: zip → rolling pre-release "main-build"
 .github/dependabot.yml          weekly npm (lint tooling) + GitHub Actions updates
 Makefile                        make help
@@ -240,12 +242,22 @@ https://github.com/awikman-bot/screenshot-scan/releases/download/main-build/scre
 ## Releasing
 
 1. Bump `"version-name"` in `extension/metadata.json` (semver, e.g. `0.2.0`)
-   and commit after `make check`.
-2. `git tag v0.2.0 && git push origin v0.2.0`. The Release workflow first
-   runs the whole CI workflow (see "CI"); if any check fails, no release is
-   made. Then it checks the tag matches `version-name`, runs `make pack` in
+   in a pull request, after `make check`. Wait until it is merged.
+2. Tag the merge commit **on `main`**, never a branch:
+   `git switch main && git pull && git tag v0.2.0 && git push origin v0.2.0`.
+   The Release workflow first checks that the tagged commit is on `main`
+   ("Tag is on main"), then runs the whole CI workflow (see "CI"); if either
+   fails, no release is made. Then it checks the tag matches `version-name`, runs `make pack` in
    a Fedora container and attaches the zip to a GitHub Release. Users install it with
    `gnome-extensions install --force <zip>`, then log out and in.
+   If "Tag is on main" fails: delete the tag (`git push origin :v0.2.0`),
+   merge the change, tag again on `main`.
+   - This check stops mistakes only. For a tag push GitHub runs the
+     workflow file from the tagged commit, so a person with write access
+     could remove the check in that commit. The real lock is a repository
+     setting (owner): Settings → Rules → Rulesets → new **tag** ruleset for
+     `v*` that restricts who may create, update and delete these tags.
+     Status 2026-11-20: not set; update this line when it is.
 3. extensions.gnome.org (EGO): the owner uploads the same zip by hand at
    https://extensions.gnome.org/upload/ under their own account (created
    2026-11-19). EGO has no token upload API, so this is not automated; do not
@@ -306,6 +318,6 @@ EGO review notes (rules: https://gjs.guide/extensions/review-guidelines/review-g
 
 | GNOME Shell | Status |
 |---|---|
-| 50.6 (Fedora 44) | `make check` passes (24 pipeline tests, 13 uninstall checks, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **passed** 2026-11-19 (one fix: Scan button overlapped the capture button, now `CenterSafeBinLayout`) |
+| 50.6 (Fedora 44) | `make check` passes (24 pipeline tests, 13 uninstall checks, 12 commit-on-branch checks, 17 e2e checks, 2 missing-tool checks), 2026-11-19. Desktop test by owner: **passed** 2026-11-19 (one fix: Scan button overlapped the capture button, now `CenterSafeBinLayout`) |
 | 51.1 (Fedora 45) | `make check` passes in CI (same counts), 2026-11-20. Not yet tested on a real desktop. |
 | 49.10 (Fedora 43) | Not supported (not in `shell-version`). CI runs lint and `make test` only. |

@@ -4,8 +4,15 @@
 #   git tag v0.1.0 && git push origin v0.1.0
 # The tag must match "version-name" in extension/metadata.json.
 #
-# The CI workflow (ci.yml: `make check` on three Fedora versions) runs first.
-# If any of it fails, nothing is built and no release is published.
+# Two things must pass first; if either fails, nothing is built or published:
+#   1. The tagged commit must be on main. A tag on a branch that was never
+#      merged would otherwise publish unreviewed code as the "latest release".
+#   2. The CI workflow (ci.yml: `make check` on three Fedora versions).
+#
+# Limit of check 1: for a tag push GitHub runs the copy of this file that is
+# in the tagged commit, so it stops mistakes, not a person with write access
+# who removes the check on purpose. A tag rule for v* in the repository
+# settings is what stops that (see AGENTS.md, "Releasing").
 #
 # The zip is the same file `make pack` builds locally, so it is also the one
 # to upload to extensions.gnome.org (that upload is manual: the site has no
@@ -21,11 +28,31 @@ permissions:
   contents: read
 
 jobs:
+  on-main:
+    name: Tag is on main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history, to compare with main
+          persist-credentials: false
+
+      - name: Check the tagged commit is on main
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch --no-tags origin "+refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"
+          if ! .github/scripts/commit-on-branch.sh "$GITHUB_SHA" "origin/$DEFAULT_BRANCH"; then
+            echo "::error::Tag $GITHUB_REF_NAME points at a commit that is not on $DEFAULT_BRANCH. Merge the change first, then tag the merge commit on $DEFAULT_BRANCH. Delete this tag."
+            exit 1
+          fi
+
   test:
+    needs: on-main
     uses: ./.github/workflows/ci.yml
 
   release:
-    needs: test
+    needs: [on-main, test]
     permissions:
       contents: write # to create the GitHub Release
     runs-on: ubuntu-latest
