@@ -11,10 +11,12 @@
 # required checks of the `main` branch protection.
 #
 # Security notes for editors of this file:
-#   - `pull_request_target` runs THIS file from the base branch, never the
-#     copy in the pull request, so a pull request cannot switch the gate off.
+#   - `pull_request_target` runs THIS file from the default branch (main),
+#     never the copy in the pull request, so a pull request cannot switch
+#     the gate off. For the same reason a change to this file can only be
+#     tried after it is merged.
 #   - It must never check out or run code from the pull request: this job has
-#     a token that can write. The checkout below takes the base branch only.
+#     a token that can write. The checkout below takes main only.
 #   - Values from the event go through `env:`, never straight into `run:`.
 #   - A skipped job counts as a passed check. Do not add `if:` to this job.
 
@@ -41,7 +43,7 @@ jobs:
       AUTHOR: ${{ github.event.pull_request.user.login }}
       EVENT_LABEL: ${{ github.event.label.name }}
     steps:
-      - name: Check out the gate script from the base branch
+      - name: Check out the gate script from main
         uses: actions/checkout@v7
         with:
           persist-credentials: false
