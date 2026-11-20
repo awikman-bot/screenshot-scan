@@ -21,6 +21,7 @@ help:
 test:
 	gjs -m tests/pipeline.test.js
 	tests/uninstall.test.sh
+	tests/outside-pr-gate.test.sh
 
 e2e:
 	tests/e2e/run.sh
